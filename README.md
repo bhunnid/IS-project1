@@ -3,7 +3,7 @@
 Server Administration **CAT 2** — hosting a PHP web application on a Linux
 server (Apache + PHP 8.1 + MySQL 8.0).
 
-**Author:** Ian Muyala — CNS 3A, Strathmore University
+**Author:** Brandon Kiplangat — CNS 3A, Strathmore University
 
 ## Features
 - User **signup** (`register.php`) with hashed passwords (`password_hash`)

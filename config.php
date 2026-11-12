@@ -1,7 +1,7 @@
 <?php
 /*
  * config.php — Database connection for the CAT2 database (MySQL 8.0)
- * Author: Ian Muyala — CNS 3A, Server Administration CAT 2
+ * Author: Brandon Kiplangat — CNS 3A, Server Administration CAT 2
  *
  * Uses a dedicated, least-privilege MySQL account (cat2_user) that only
  * has rights on the CAT2 database. We never connect to MySQL as root
