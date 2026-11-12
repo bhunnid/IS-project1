@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/partials/header.php';
 ?>
 <div class="auth-card">
-    <div class="card-head"><h4>Create your account</h4></div>
+    <div class="card-head"><h4>Create your account — CNS CAT2</h4></div>
     <div class="card-body">
         <?php foreach ($errors as $e): ?>
             <div class="alert alert-danger py-2"><?php echo $e; ?></div>
