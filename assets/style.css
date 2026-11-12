@@ -1,0 +1,50 @@
+/* style.css — shared styling for IS-project1 (Ian Muyala, CNS 3A) */
+
+body {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    min-height: 100vh;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    color: #e5e7eb;
+}
+
+.navbar-brand { font-weight: 700; letter-spacing: .5px; }
+
+.auth-card {
+    max-width: 440px;
+    margin: 48px auto;
+    background: #ffffff;
+    color: #1f2937;
+    border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    overflow: hidden;
+}
+
+.auth-card .card-head {
+    background: #2563eb;
+    color: #fff;
+    padding: 22px 28px;
+}
+.auth-card .card-head h4 { margin: 0; font-weight: 700; }
+.auth-card .card-body { padding: 28px; }
+
+.wide-card {
+    max-width: 920px;
+    margin: 40px auto;
+    background: #fff;
+    color: #1f2937;
+    border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    padding: 28px;
+}
+
+.btn-primary { background: #2563eb; border: none; }
+.btn-primary:hover { background: #1d4ed8; }
+
+.app-footer {
+    text-align: center;
+    padding: 18px;
+    color: #9ca3af;
+    font-size: .85rem;
+}
+
+table thead { background: #f3f4f6; }
