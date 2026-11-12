@@ -1,6 +1,6 @@
 -- =====================================================================
 -- cat2_setup.sql — Server Administration CAT 2
--- Author: Ian Muyala (CNS 3A)
+-- Author: Brandon Kiplangat (CNS 3A)
 -- Creates the CAT2 database, its tables, and a least-privilege app user.
 -- Run with:  sudo mysql < db/cat2_setup.sql
 -- =====================================================================
