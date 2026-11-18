@@ -7,7 +7,7 @@ if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
 }
 ?>
 <footer class="app-footer">
-    IS Project 1 &mdash; CNS 3205 Server Administration &middot; Brandon Kiplangat &amp; Ian Muyala, CNS 3A &middot; Strathmore University
+    IS Project 1 &mdash; CNS 3205 Server Administration &middot; Brandon Kiplangat, Ian Muyala &amp; Eric Muhika, CNS 3A &middot; Strathmore University
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

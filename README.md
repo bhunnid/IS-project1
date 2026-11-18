@@ -1,7 +1,7 @@
 # IS Project 1 — Secure, Self-Defending PHP Web Application
 
 CNS 3205 Server Administration end-of-semester project, Strathmore University (CNS 3A).
-**Team:** Brandon Kiplangat (193310) · Ian Muyala (191616)
+**Team:** Brandon Kiplangat (193310) · Ian Muyala (191616) · Eric Muhika (191633)
 
 | Service | URL | Purpose |
 |---------|-----|---------|
