@@ -3,6 +3,7 @@
 # Run on the server:   cd /var/www/app && git pull && sudo bash deploy/finish.sh
 #
 # Steps (each one is independent; a failure is reported and the script moves on):
+#   0. app file ownership: owner:www-data, setgid directories, nothing for "other"
 #   1. nginx: new site file (www over HTTPS, ACME webroot, login rate limit, blocked internals)
 #   2. ZeroSSL certificate for apex + www via ACME (acme.sh), with automatic renewal
 #   3. nginx global TLS clean-up (drop TLS 1.0/1.1 defaults, hide version)
@@ -116,6 +117,17 @@ admin_password() {
     echo "New admin password (shown once, store it in a password manager): $pw"
 }
 
+permissions() {
+    # setgid directories: files that git pull rewrites inherit the www-data group,
+    # so the web server can read them while "other" users get nothing.
+    local owner; owner=$(stat -c %U "$APP")
+    chown -R "$owner":www-data "$APP"
+    find "$APP" -type d -exec chmod 2750 {} +
+    find "$APP" -type f -exec chmod g+r,o-rwx {} +
+    chmod 640 "$APP"/config.php
+}
+
+step "app file permissions"      permissions
 step "nginx site file"           nginx_site
 step "ZeroSSL apex+www via ACME" zerossl_acme
 step "nginx global TLS"          nginx_global
