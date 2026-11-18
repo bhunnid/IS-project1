@@ -1,0 +1,9 @@
+# 5 POSTs in 10 minutes -> blocked from web ports (SSH is not affected) for 10 minutes
+[trap-honeypot]
+enabled  = true
+port     = http,https
+filter   = trap-honeypot
+logpath  = /var/log/nginx/trap.access.log
+maxretry = 5
+findtime = 10m
+bantime  = 10m

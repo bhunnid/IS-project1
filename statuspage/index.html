@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Status | serveradminproject.me</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --text:#e2e8f0; --muted:#94a3b8;
+          --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --accent:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui, Arial, sans-serif; }
+  header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px;
+           padding:18px 24px; border-bottom:1px solid var(--line); }
+  h1 { font-size:20px; margin:0; }
+  .live { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:14px; }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--warn); }
+  .dot.ok { background:var(--ok); animation:pulse 2s infinite; }
+  .dot.bad { background:var(--bad); }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(34,197,94,.6);} 70%{box-shadow:0 0 0 8px rgba(34,197,94,0);} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0);} }
+  main { max-width:1100px; margin:0 auto; padding:20px; display:grid; gap:16px; }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .card h2 { margin:0 0 10px; font-size:13px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .big { font-size:34px; font-weight:700; }
+  .row { display:flex; justify-content:space-between; gap:10px; padding:5px 0; font-size:14px; }
+  .muted { color:var(--muted); }
+  .chart { display:flex; align-items:flex-end; gap:3px; height:110px; }
+  .bar { flex:1; background:var(--accent); border-radius:2px 2px 0 0; min-height:2px; opacity:.85; }
+  .labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:600; }
+  td.path { max-width:260px; overflow:hidden; text-overflow:ellipsis; }
+  tr.new td { animation:flash 2.5s ease-out; }
+  @keyframes flash { from { background:rgba(56,189,248,.3); } to { background:transparent; } }
+  .badge { padding:2px 8px; border-radius:99px; font-size:12px; background:#334155; }
+  .t-sql-injection, .t-xss, .t-path-traversal { background:#7f1d1d; }
+  .t-scanner { background:#78350f; }
+  .t-credential-guess { background:#1e3a8a; }
+  .pill { padding:2px 8px; border-radius:99px; font-size:12px; }
+  .pill.ok { background:#14532d; } .pill.warn { background:#78350f; } .pill.bad { background:#7f1d1d; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>System Status &mdash; serveradminproject.me</h1>
+  <div class="live"><span id="live" class="dot"></span><span id="liveText">connecting</span><span id="stamp"></span></div>
+</header>
+<main>
+  <div class="grid">
+    <div class="card"><h2>Honeypot hits (24h)</h2><div class="big" id="last24">-</div></div>
+    <div class="card"><h2>Total hits</h2><div class="big" id="total">-</div></div>
+    <div class="card"><h2>Unique attackers</h2><div class="big" id="unique">-</div></div>
+    <div class="card"><h2>Failed logins (24h)</h2><div class="big" id="failed">-</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Attacks per hour (server time)</h2>
+    <div class="chart" id="chart"></div>
+    <div class="labels"><span id="lFirst"></span><span id="lLast"></span></div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h2>Attack types</h2><div id="types"></div></div>
+    <div class="card"><h2>Top sources</h2><div id="top"></div></div>
+    <div class="card"><h2>Server health</h2><div id="health"></div></div>
+    <div class="card"><h2>TLS certificates</h2><div id="certs"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>Live attack feed (addresses masked)</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Time</th><th>Source</th><th>Type</th><th>Request</th><th>Username tried</th></tr></thead>
+        <tbody id="feed"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<footer>Updates every 5 seconds. Decoy login at trap.serveradminproject.me &middot; all attempts are logged.</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text !== undefined && text !== null) e.textContent = String(text);
+    if (cls) e.className = cls;
+    return e;
+  }
+  function kv(parent, k, v) {
+    const r = el('div', null, 'row');
+    r.appendChild(el('span', k, 'muted'));
+    r.appendChild(el('span', v));
+    parent.appendChild(r);
+  }
+  function uptime(s) {
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return d + 'd ' + h + 'h ' + m + 'm';
+  }
+  let lastId = 0;
+  let firstLoad = true;
+
+  function render(d) {
+    const h = d.honeypot;
+    $('last24').textContent = h.last24;
+    $('total').textContent = h.total;
+    $('unique').textContent = h.unique;
+    $('failed').textContent = d.app.failed_logins_24h;
+
+    const chart = $('chart'); chart.replaceChildren();
+    const max = Math.max(1, ...h.hourly.map(x => x.count));
+    h.hourly.forEach(x => {
+      const b = el('div', null, 'bar');
+      b.style.height = Math.max(2, Math.round((x.count / max) * 100)) + '%';
+      b.title = x.label + ' - ' + x.count;
+      chart.appendChild(b);
+    });
+    $('lFirst').textContent = h.hourly[0].label;
+    $('lLast').textContent = h.hourly[h.hourly.length - 1].label;
+
+    const types = $('types'); types.replaceChildren();
+    if (!h.by_type.length) types.appendChild(el('div', 'No hits yet', 'muted'));
+    h.by_type.forEach(t => kv(types, t.type, t.count));
+
+    const top = $('top'); top.replaceChildren();
+    if (!h.top.length) top.appendChild(el('div', 'No hits yet', 'muted'));
+    h.top.forEach(t => kv(top, t.ip, t.count));
+
+    const hl = $('health'); hl.replaceChildren();
+    kv(hl, 'Uptime', uptime(d.health.uptime));
+    kv(hl, 'Load (1/5/15m)', d.health.load.join(' / '));
+    kv(hl, 'Memory used', d.health.mem_pct + '%');
+    kv(hl, 'Disk used', d.health.disk_pct + '%');
+    kv(hl, 'PHP', d.health.php);
+    kv(hl, 'Database', d.health.db ? 'online' : 'down');
+
+    const certs = $('certs'); certs.replaceChildren();
+    d.certs.forEach(c => {
+      const r = el('div', null, 'row');
+      r.appendChild(el('span', c.name, 'muted'));
+      let cls = 'pill ok', txt = c.days + ' days';
+      if (c.days === null) { cls = 'pill bad'; txt = 'unreadable'; }
+      else if (c.days < 7) cls = 'pill bad';
+      else if (c.days < 21) cls = 'pill warn';
+      r.appendChild(el('span', txt, cls));
+      certs.appendChild(r);
+    });
+
+    const feed = $('feed'); feed.replaceChildren();
+    if (!h.recent.length) {
+      const tr = el('tr'); const td = el('td', 'Waiting for the first attacker...', 'muted'); td.colSpan = 5; tr.appendChild(td); feed.appendChild(tr);
+    }
+    h.recent.forEach(x => {
+      const tr = el('tr');
+      if (!firstLoad && x.id > lastId) tr.className = 'new';
+      tr.appendChild(el('td', x.time));
+      tr.appendChild(el('td', x.ip));
+      const tdType = el('td'); tdType.appendChild(el('span', x.type, 'badge t-' + x.type.replace(/[^a-z-]/g, ''))); tr.appendChild(tdType);
+      tr.appendChild(el('td', x.method + ' ' + x.path, 'path'));
+      tr.appendChild(el('td', x.user || '-'));
+      feed.appendChild(tr);
+    });
+    if (h.recent.length) lastId = Math.max(lastId, h.recent[0].id);
+    firstLoad = false;
+    $('stamp').textContent = new Date().toLocaleTimeString();
+  }
+
+  async function refresh() {
+    try {
+      const r = await fetch('api.php', { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      render(await r.json());
+      $('live').className = 'dot ok'; $('liveText').textContent = 'live';
+    } catch (e) {
+      $('live').className = 'dot bad'; $('liveText').textContent = 'offline';
+    }
+  }
+  refresh();
+  setInterval(refresh, 5000);
+</script>
+</body>
+</html>
