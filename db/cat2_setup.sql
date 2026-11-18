@@ -34,6 +34,6 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 
 -- 4. Dedicated application account (least privilege: CAT2 only)
-CREATE USER IF NOT EXISTS 'cat2_user'@'localhost' IDENTIFIED BY 'Cat2@StrathCNS';
-GRANT ALL PRIVILEGES ON CAT2.* TO 'cat2_user'@'localhost';
+CREATE USER IF NOT EXISTS 'cat2_user'@'localhost' IDENTIFIED BY 'CHANGE_ME';
+GRANT SELECT, INSERT, UPDATE, DELETE ON CAT2.* TO 'cat2_user'@'localhost';
 FLUSH PRIVILEGES;
