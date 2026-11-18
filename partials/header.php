@@ -1,5 +1,10 @@
 <?php
 /* partials/header.php — shared top of every page (nav + Bootstrap) */
+// Include-only file: never serve it directly.
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    http_response_code(404);
+    exit;
+}
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 $pageTitle = $pageTitle ?? 'IS Project 1';
 ?>
@@ -8,8 +13,9 @@ $pageTitle = $pageTitle ?? 'IS Project 1';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo htmlspecialchars($pageTitle); ?> | Brandon Kiplangat</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title><?php echo htmlspecialchars($pageTitle); ?> | IS Project 1</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="assets/style.css" rel="stylesheet">
 </head>
 <body>

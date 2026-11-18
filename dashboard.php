@@ -1,25 +1,32 @@
 <?php
-/* dashboard.php — shown after a successful login (proves Part B Q6).
-   Protected: redirects to login if there is no session. Also lists all
-   registered users so the grader can see the signup table filling up. */
+/* dashboard.php - shown after a successful login.
+   Protected by require_login() (30-minute idle timeout). Lists registered users with
+   e-mail addresses masked so one user cannot harvest another's contact details. */
 require __DIR__ . '/config.php';
-session_start();
-if (empty($_SESSION['username'])) {
-    header('Location: login.php');
-    exit;
-}
+require __DIR__ . '/security.php';
+require_login();
 $pageTitle = 'Dashboard';
-include __DIR__ . '/partials/header.php';
 
-$users = $conn->query('SELECT id, fullname, username, email, course, created_at
-                       FROM users ORDER BY id');
+function mask_email(string $email): string
+{
+    $at = strpos($email, '@');
+    if ($at === false || $at < 1) {
+        return '***';
+    }
+    return substr($email, 0, 1) . str_repeat('*', max(2, $at - 1)) . substr($email, $at);
+}
+
+$users = $conn->query('SELECT id, fullname, username, email, course, created_at FROM users ORDER BY id');
+include __DIR__ . '/partials/header.php';
 ?>
 <div class="wide-card">
-    <h3 class="mb-1">You are logged in ✅</h3>
+    <h3 class="mb-1">You are logged in</h3>
     <p class="text-muted">Session user:
-        <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong></p>
+        <strong><?php echo e($_SESSION['username']); ?></strong>
+        &middot; signed in at <?php echo e(gmdate('H:i', (int) ($_SESSION['login_at'] ?? time()))); ?> UTC
+        &middot; idle sessions expire after 30 minutes</p>
 
-    <h5 class="mt-4">Registered users (CAT2.users)</h5>
+    <h5 class="mt-4">Registered users</h5>
     <div class="table-responsive">
         <table class="table table-striped table-bordered align-middle">
             <thead>
@@ -27,14 +34,14 @@ $users = $conn->query('SELECT id, fullname, username, email, course, created_at
                     <th>Email</th><th>Course</th><th>Registered</th></tr>
             </thead>
             <tbody>
-            <?php while ($u = $users->fetch_assoc()): ?>
+            <?php while ($users && ($u = $users->fetch_assoc())): ?>
                 <tr>
-                    <td><?php echo $u['id']; ?></td>
-                    <td><?php echo htmlspecialchars($u['fullname']); ?></td>
-                    <td><?php echo htmlspecialchars($u['username']); ?></td>
-                    <td><?php echo htmlspecialchars($u['email']); ?></td>
-                    <td><?php echo htmlspecialchars($u['course']); ?></td>
-                    <td><?php echo $u['created_at']; ?></td>
+                    <td><?php echo (int) $u['id']; ?></td>
+                    <td><?php echo e($u['fullname']); ?></td>
+                    <td><?php echo e($u['username']); ?></td>
+                    <td><?php echo e(mask_email($u['email'])); ?></td>
+                    <td><?php echo e((string) $u['course']); ?></td>
+                    <td><?php echo e($u['created_at']); ?></td>
                 </tr>
             <?php endwhile; ?>
             </tbody>

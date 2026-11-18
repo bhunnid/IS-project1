@@ -1,47 +1,50 @@
-# IS Project 1 — Signup / Login Web App
+# IS Project 1 — Secure, Self-Defending PHP Web Application
 
-Server Administration **CAT 2** — hosting a PHP web application on a Linux
-server (Apache + PHP 8.1 + MySQL 8.0).
+CNS 3205 Server Administration end-of-semester project, Strathmore University (CNS 3A).
+**Team:** Brandon Kiplangat (193310) · Ian Muyala (191616)
 
-**Author:** Brandon Kiplangat — CNS 3A, Strathmore University
+| Service | URL | Purpose |
+|---------|-----|---------|
+| Main app | https://serveradminproject.me | Signup, login, dashboard, feedback |
+| Admin | https://admin.serveradminproject.me | Security events (HTTP basic auth over TLS) |
+| Status | https://status.serveradminproject.me | Live honeypot, health and certificate dashboard |
+| Honeypot | http://trap.serveradminproject.me | Decoy "Administration Console" that logs attackers |
 
-## Features
-- User **signup** (`register.php`) with hashed passwords (`password_hash`)
-- User **login** (`login.php`) with session handling
-- Protected **dashboard** (`dashboard.php`) listing registered users
-- **Feedback** form (`feedback.php`) — second form, POST + retrieve
-- All DB access via **prepared statements** (SQL-injection safe)
-- Dedicated least-privilege DB user (`cat2_user`), never root
+## Architecture
+```
+Internet ──> Azure DNS (serveradminproject.me zone, 4 azure-dns name servers)
+         ──> Azure NSG (22, 80, 443) ──> UFW ──> fail2ban
+         ──> Nginx 1.24 (4 virtual hosts, ZeroSSL TLS 1.2/1.3, security headers, rate limit)
+         ──> PHP 8.3-FPM ──> MariaDB 10.11 (database CAT2, least-privilege user cat2_user)
+Azure VM: Ubuntu 24.04 LTS, Standard_B2ats_v2, Central India, static IP 135.235.194.239
+```
 
-## Stack
-| Layer | Software |
-|-------|----------|
-| OS | Ubuntu 22.04 LTS |
-| Web server | Apache 2.4 |
-| Language | PHP 8.1 |
-| Database | MySQL 8.0 (database: `CAT2`) |
+## Security features
+- Argon2id password hashing, automatic rehash of old bcrypt hashes on login
+- Prepared statements everywhere; output escaped with `htmlspecialchars`
+- CSRF tokens on every form; HTML5 + server-side validation; 12+ character password policy
+- Breached-password check (Have I Been Pwned k-anonymity: only 5 hash characters leave the server)
+- Login rate limiting in PHP (5 failures / 15 min) and in Nginx (10 requests/min per IP)
+- Hardened sessions (Secure, HttpOnly, SameSite=Strict, strict mode, 30-minute idle timeout)
+- Strict Content-Security-Policy, HSTS, X-Frame-Options, nosniff, Referrer/Permissions-Policy, SRI on CDN assets
+- DB credentials outside the web root and outside Git (`/etc/isproject/db.php`, mode 640)
+- Honeypot + fail2ban auto-ban, live status page, admin panel
+- Nightly DB/config backups, daily certificate-expiry check, CI with PHP lint and gitleaks secret scanning
 
-## Setup
+## Deploy
 ```bash
-# 1. Create the database, tables and app user
-sudo mysql < db/cat2_setup.sql
-
-# 2. Deploy to the web root
-sudo cp -r . /var/www/html/IS-project1
-
-# 3. Visit
-http://localhost/IS-project1/register.php
+sudo mysql < db/cat2_setup.sql && sudo mysql CAT2 < db/login_attempts.sql
+cd /var/www/app && git pull
+bash deploy/apply.sh          # honeypot, status page, admin panel, fail2ban jail
+sudo bash deploy/finish.sh    # www certificate, SSH hardening, backups, cert monitor
 ```
 
-## Files
+## Layout
 ```
-config.php            DB connection (CAT2)
-register.php          Signup page
-login.php             Login page
-dashboard.php         Post-login page (lists users)
-logout.php            Ends the session
-feedback.php          Second form + retrieval
-partials/             Shared header & footer
-assets/style.css      Styling
-db/cat2_setup.sql     Database + tables + app user
+register.php login.php dashboard.php feedback.php logout.php   application pages
+security.php config.php partials/                              include-only (blocked from the web)
+honeypot/ statuspage/ adminpanel/                              trap, status and admin virtual hosts
+db/                                                            schema scripts
+deploy/                                                        nginx site, fail2ban, installers, cron scripts
+server/99-hardening.ini                                        PHP session and error hardening
 ```

@@ -1,4 +1,9 @@
 <?php
+// Include-only file: never serve it directly.
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    http_response_code(404);
+    exit;
+}
 // Credentials live outside the web root and outside Git
 require '/etc/isproject/db.php';
 

@@ -1,9 +1,29 @@
-name: PHP Lint
-on: [push]
+name: CI
+on: [push, pull_request]
+
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    name: PHP and shell syntax
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Check PHP syntax
-        run: find . -name "*.php" -print0 | xargs -0 -n1 php -l
+      - name: PHP syntax check (PHP 8.3, same as the server)
+        run: |
+          php -v | head -1
+          find . -name "*.php" -print0 | xargs -0 -n1 php -l
+      - name: Shell script syntax check
+        run: for f in deploy/*.sh; do bash -n "$f" && echo "ok $f"; done
+      - name: No credentials in config.php
+        run: |
+          ! grep -nE "DB_PASS\s*=\s*['\"][^'\"]+['\"]" config.php
+
+  secrets:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

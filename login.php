@@ -5,6 +5,7 @@ require __DIR__ . '/config.php';
 require __DIR__ . '/security.php';
 $pageTitle = 'Login';
 $error = '';
+$notice = isset($_GET['expired']) ? 'Please log in to continue.' : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = post_str('username');
@@ -36,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id']  = $row['id'];
             $_SESSION['username'] = $row['username'];
             $_SESSION['login_at'] = time();
+            $_SESSION['last_seen'] = time();
             if (password_needs_rehash($row['password'], PASSWORD_ARGON2ID)) {
                 $new = password_hash($pass, PASSWORD_ARGON2ID);
                 $u = $conn->prepare('UPDATE users SET password = ? WHERE id = ?');
@@ -55,6 +57,9 @@ include __DIR__ . '/partials/header.php';
 <div class="auth-card">
     <div class="card-head"><h4>Welcome back</h4></div>
     <div class="card-body">
+        <?php if ($notice && !$error): ?>
+            <div class="alert alert-info py-2"><?php echo e($notice); ?></div>
+        <?php endif; ?>
         <?php if ($error): ?>
             <div class="alert alert-danger py-2"><?php echo e($error); ?></div>
         <?php endif; ?>

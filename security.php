@@ -1,8 +1,36 @@
 <?php
-/* security.php - shared helpers: output escaping, CSRF, password policy,
-   breached-password check (HIBP k-anonymity) and login rate limiting. */
+/* security.php - shared helpers: security headers, session idle timeout, output escaping,
+   CSRF, password policy, breached-password check (HIBP k-anonymity) and login rate limiting. */
+
+// Include-only file: never serve it directly.
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
+// Strict Content-Security-Policy: only our own files plus the pinned Bootstrap CDN (with SRI).
+header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; "
+     . "style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; "
+     . "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
+header('Cross-Origin-Opener-Policy: same-origin');
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
+}
+
+const SESSION_IDLE_SECONDS = 1800; // 30 minutes
+
+/* Redirect to login unless a valid, non-idle session exists. */
+function require_login(): void
+{
+    $last = $_SESSION['last_seen'] ?? 0;
+    if (empty($_SESSION['user_id']) || (time() - (int) $last) > SESSION_IDLE_SECONDS) {
+        $_SESSION = [];
+        session_regenerate_id(true);
+        header('Location: login.php?expired=1');
+        exit;
+    }
+    $_SESSION['last_seen'] = time();
 }
 
 function e(string $s): string
